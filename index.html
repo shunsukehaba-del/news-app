@@ -7,7 +7,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="今日のニュース"/>
 <title>今日のニュース</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet"/>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -16,9 +15,6 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;background:#07090F;}
 body{-webkit-font-smoothing:antialiased;}
-::-webkit-scrollbar{width:4px;}
-::-webkit-scrollbar-track{background:transparent;}
-::-webkit-scrollbar-thumb{background:#333;border-radius:4px;}
 @keyframes spin{to{transform:rotate(360deg);}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 </style>
@@ -26,36 +22,68 @@ body{-webkit-font-smoothing:antialiased;}
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useState, useEffect, useRef } = React;
+const { useState, useEffect } = React;
 const CATEGORIES = [
   {id:"japan",label:"🇯🇵 国内",group:"news",color:"#E8614A",mode:"list",prompt:`今日の日本国内の重要ニュースを8件、以下のJSON形式のみで返してください。NHK・朝日・毎日・読売・日経・共同・時事など主要メディアの情報のみ使用。ピンクスライムメディア・まとめサイト・SNS投稿は含めないでください。{"items":[{"rank":1,"title":"ニュースタイトル（50文字以内）","source":"媒体名","category":"政治/経済/社会/国際/科学/その他","importance":"high"}]}`},
   {id:"us",label:"🇺🇸 米国",group:"news",color:"#4A90E8",mode:"summary",prompt:`今日のアメリカの重要ニュース5件をJSON形式のみで返してください。AP・Reuters・NYT・WSJ・Bloomberg・CNN・BBCのみ参照。{"summary":"今日のアメリカの一言まとめ（40文字以内）","items":[{"rank":1,"title":"タイトル（45文字以内）","body":"概要（90文字以内）","importance":"high","keyword":"キーワード"}]}`},
   {id:"europe",label:"🇪🇺 欧州",group:"news",color:"#6A8FE8",mode:"summary",prompt:`今日の欧州の重要ニュース5件をJSON形式のみで返してください。Reuters・BBC・Guardian・FT・Deutsche Welle・EURONEWSのみ参照。{"summary":"今日の欧州の一言まとめ（40文字以内）","items":[{"rank":1,"title":"タイトル（45文字以内）","body":"概要（90文字以内）","importance":"high","keyword":"キーワード"}]}`},
   {id:"sea",label:"🌏 東南アジア",group:"news",color:"#4AE8B0",mode:"summary",prompt:`今日の東南アジア諸国の重要ニュース5件をJSON形式のみで返してください。Reuters・AP・Straits Times・Nikkei Asia・Channel NewsAsiaのみ参照。{"summary":"今日の東南アジアの一言まとめ（40文字以内）","items":[{"rank":1,"title":"タイトル（45文字以内）","body":"概要（90文字以内）","importance":"high","keyword":"キーワード"}]}`},
   {id:"cn_ru",label:"🇨🇳🇷🇺 中露",group:"news",color:"#E84A4A",mode:"summary",prompt:`今日の中国・ロシア関連の重要ニュース5件をJSON形式のみで返してください。Reuters・AP・BBC・FT・Nikkei Asiaなど中立メディアのみ参照。CGTN・Xinhua・RT・Sputnikは参照しないでください。{"summary":"今日の中露の一言まとめ（40文字以内）","items":[{"rank":1,"title":"タイトル（45文字以内）","body":"概要（90文字以内）","importance":"high","keyword":"キーワード"}]}`},
-  {id:"deloitte",label:"🏢 Deloitte",group:"topic",color:"#86E44A",mode:"summary",prompt:`Deloitte（デロイト）関連の最新ニュース・動向5件をJSON形式のみで返してください。Reuters・Bloomberg・FT・WSJ・Nikkei・Deloitte公式のみ参照。{"summary":"Deloitte関連の一言まとめ（40文字以内）","items":[{"rank":1,"title":"タイトル（45文字以内）","body":"概要（90文字以内）","importance":"high","keyword":"キーワード"}]}`},
-  {id:"mitsubishi",label:"⚡ 三菱電機",group:"topic",color:"#E8A44A",mode:"summary",prompt:`三菱電機の最新ニュース・決算・改革動向5件をJSON形式のみで返してください。日経・朝日・Bloomberg・Reuters・三菱電機公式のみ参照。{"summary":"三菱電機の一言まとめ（40文字以内）","items":[{"rank":1,"title":"タイトル（45文字以内）","body":"概要（90文字以内）","importance":"high","keyword":"キーワード"}]}`},
+  {id:"deloitte",label:"🏢 Deloitte",group:"topic",color:"#86E44A",mode:"summary",prompt:`Deloitte関連の最新ニュース5件をJSON形式のみで返してください。Reuters・Bloomberg・FT・WSJ・Nikkei・Deloitte公式のみ参照。{"summary":"Deloitte関連の一言まとめ（40文字以内）","items":[{"rank":1,"title":"タイトル（45文字以内）","body":"概要（90文字以内）","importance":"high","keyword":"キーワード"}]}`},
+  {id:"mitsubishi",label:"⚡ 三菱電機",group:"topic",color:"#E8A44A",mode:"summary",prompt:`三菱電機の最新ニュース5件をJSON形式のみで返してください。日経・朝日・Bloomberg・Reuters・三菱電機公式のみ参照。{"summary":"三菱電機の一言まとめ（40文字以内）","items":[{"rank":1,"title":"タイトル（45文字以内）","body":"概要（90文字以内）","importance":"high","keyword":"キーワード"}]}`},
   {id:"defense",label:"🛡️ 防衛・安保",group:"topic",color:"#A44AE8",mode:"summary",prompt:`防衛・安全保障の最新ニュース5件をJSON形式のみで返してください。防衛省・NHK・日経・Reuters・Defense News・JANESのみ参照。{"summary":"防衛・安保の一言まとめ（40文字以内）","items":[{"rank":1,"title":"タイトル（45文字以内）","body":"概要（90文字以内）","importance":"high","keyword":"キーワード"}]}`},
   {id:"space",label:"🚀 宇宙",group:"topic",color:"#4A6AE8",mode:"summary",prompt:`宇宙開発・宇宙政策の最新ニュース5件をJSON形式のみで返してください。JAXA公式・NASA公式・Space.com・Nikkei・Reuters・NHKのみ参照。{"summary":"宇宙関連の一言まとめ（40文字以内）","items":[{"rank":1,"title":"タイトル（45文字以内）","body":"概要（90文字以内）","importance":"high","keyword":"キーワード"}]}`},
-  {id:"disinfo",label:"⚠️ 偽・誤情報",group:"topic",color:"#E8D44A",mode:"summary",prompt:`偽情報・誤情報・認知戦・情報操作の最新動向5件をJSON形式のみで返してください。Reuters Fact Check・AP Fact Check・総務省・EU DisinfoLab・Bellingcatのみ参照。{"summary":"偽・誤情報関連の一言まとめ（40文字以内）","items":[{"rank":1,"title":"タイトル（45文字以内）","body":"概要（90文字以内）","importance":"high","keyword":"キーワード"}]}`},
-  {id:"geopolitics",label:"🌐 地政学",group:"topic",color:"#4AE8E8",mode:"summary",prompt:`地政学・国際政治の最新分析・ニュース5件をJSON形式のみで返してください。CSIS・IISS・Chatham House・CFR・東京財団・日経・FTのみ参照。{"summary":"地政学関連の一言まとめ（40文字以内）","items":[{"rank":1,"title":"タイトル（45文字以内）","body":"概要（90文字以内）","importance":"high","keyword":"キーワード"}]}`},
-  {id:"ecosec",label:"🔒 経済安保",group:"topic",color:"#E84A86",mode:"summary",prompt:`経済安全保障（サプライチェーン・半導体規制・重要技術）の最新ニュース5件をJSON形式のみで返してください。日経・経産省・内閣官房・FT・Reuters・Bloombergのみ参照。{"summary":"経済安保の一言まとめ（40文字以内）","items":[{"rank":1,"title":"タイトル（45文字以内）","body":"概要（90文字以内）","importance":"high","keyword":"キーワード"}]}`},
+  {id:"disinfo",label:"⚠️ 偽・誤情報",group:"topic",color:"#E8D44A",mode:"summary",prompt:`偽情報・誤情報・認知戦の最新動向5件をJSON形式のみで返してください。Reuters Fact Check・AP Fact Check・総務省・EU DisinfoLab・Bellingcatのみ参照。{"summary":"偽・誤情報関連の一言まとめ（40文字以内）","items":[{"rank":1,"title":"タイトル（45文字以内）","body":"概要（90文字以内）","importance":"high","keyword":"キーワード"}]}`},
+  {id:"geopolitics",label:"🌐 地政学",group:"topic",color:"#4AE8E8",mode:"summary",prompt:`地政学・国際政治の最新分析5件をJSON形式のみで返してください。CSIS・IISS・Chatham House・CFR・東京財団・日経・FTのみ参照。{"summary":"地政学関連の一言まとめ（40文字以内）","items":[{"rank":1,"title":"タイトル（45文字以内）","body":"概要（90文字以内）","importance":"high","keyword":"キーワード"}]}`},
+  {id:"ecosec",label:"🔒 経済安保",group:"topic",color:"#E84A86",mode:"summary",prompt:`経済安全保障の最新ニュース5件をJSON形式のみで返してください。日経・経産省・内閣官房・FT・Reuters・Bloombergのみ参照。{"summary":"経済安保の一言まとめ（40文字以内）","items":[{"rank":1,"title":"タイトル（45文字以内）","body":"概要（90文字以内）","importance":"high","keyword":"キーワード"}]}`},
 ];
 const GROUP_LABELS={news:"📰 国内・海外ニュース",topic:"🔍 専門トピック"};
 const IMP_COLOR={high:"#FF4D6D",medium:"#FFB300",low:"#6AD4A0"};
 const IMP_LABEL={high:"重要",medium:"注目",low:"参考"};
+
+function ApiKeyScreen({onSave}){
+  const [val,setVal]=useState("");
+  return(
+    <div style={{minHeight:"100vh",background:"#07090F",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32,fontFamily:"'Noto Sans JP',sans-serif"}}>
+      <div style={{fontSize:32,marginBottom:16}}>🔑</div>
+      <div style={{fontSize:20,fontWeight:900,color:"#DDE4F0",marginBottom:8}}>APIキーを入力</div>
+      <div style={{fontSize:11,color:"#556",marginBottom:24,textAlign:"center",lineHeight:1.7}}>
+        Anthropic APIキーを入力してください。<br/>キーはこのデバイスにのみ保存されます。
+      </div>
+      <input
+        type="password"
+        value={val}
+        onChange={e=>setVal(e.target.value)}
+        placeholder="sk-ant-..."
+        style={{width:"100%",maxWidth:360,padding:"12px 14px",borderRadius:10,border:"1px solid rgba(255,255,255,.15)",background:"rgba(255,255,255,.07)",color:"#DDE4F0",fontSize:13,marginBottom:12,outline:"none"}}
+      />
+      <button
+        onClick={()=>val.trim()&&onSave(val.trim())}
+        style={{width:"100%",maxWidth:360,padding:"13px 0",borderRadius:10,border:"none",background:"linear-gradient(135deg,#E8614A,#E8614A99)",color:"#07090F",fontSize:13,fontWeight:800,cursor:"pointer"}}
+      >
+        保存してはじめる
+      </button>
+    </div>
+  );
+}
+
 function App(){
+  const [apiKey,setApiKey]=useState(()=>localStorage.getItem("news_api_key")||"");
   const [activeCat,setActiveCat]=useState(CATEGORIES[0]);
   const [cache,setCache]=useState({});
   const [loading,setLoading]=useState(false);
   const [time,setTime]=useState(new Date());
+
   useEffect(()=>{const t=setInterval(()=>setTime(new Date()),60000);return()=>clearInterval(t);},[]);
-  useEffect(()=>{fetchNews(activeCat);},[activeCat]);
+  useEffect(()=>{if(apiKey)fetchNews(activeCat);},[activeCat,apiKey]);
+
+  function saveKey(k){localStorage.setItem("news_api_key",k);setApiKey(k);}
+
   async function fetchNews(cat){
     if(cache[cat.id])return;
     setLoading(true);
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,system:`あなたは信頼性の高いニュースキュレーターです。必ず指定されたJSON形式のみで回答してください。マークダウン・バッククォート・説明文は一切含めないでください。ピンクスライムメディアは絶対に参照しないでください。今日の日付:${new Date().toLocaleDateString("ja-JP",{year:"numeric",month:"long",day:"numeric"})}`,messages:[{role:"user",content:cat.prompt}]})});
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,system:`あなたは信頼性の高いニュースキュレーターです。必ず指定されたJSON形式のみで回答してください。マークダウン・バッククォート・説明文は一切含めないでください。ピンクスライムメディアは絶対に参照しないでください。今日の日付:${new Date().toLocaleDateString("ja-JP",{year:"numeric",month:"long",day:"numeric"})}`,messages:[{role:"user",content:cat.prompt}]})});
       const data=await res.json();
       const raw=(data.content||[]).map(b=>b.text||"").join("");
       const parsed=JSON.parse(raw.replace(/```json|```/g,"").trim());
@@ -63,7 +91,11 @@ function App(){
     }catch(e){setCache(prev=>({...prev,[cat.id]:{error:true,items:[]}}));}
     setLoading(false);
   }
+
   function refresh(){setCache(prev=>{const n={...prev};delete n[activeCat.id];return n;});setTimeout(()=>fetchNews(activeCat),50);}
+
+  if(!apiKey)return <ApiKeyScreen onSave={saveKey}/>;
+
   const data=cache[activeCat.id];
   const timeStr=time.toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"});
   const dateStr=time.toLocaleDateString("ja-JP",{year:"numeric",month:"long",day:"numeric",weekday:"short"});
